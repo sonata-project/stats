@@ -11,10 +11,11 @@
 
 namespace Stats\Computer;
 
+use Stats\Collection\CollectionInterface;
 use Stats\State;
 use Stats\Entry;
 
-class MinComputer implements ComputerInterface
+class MinComputer extends BaseComputer
 {
     /**
      * {@inheritdoc}
@@ -27,7 +28,7 @@ class MinComputer implements ComputerInterface
     /**
      * {@inheritdoc}
      */
-    public function init(State $state)
+    public function init(State $state, CollectionInterface $collection)
     {
         $state->min = 0;
     }
@@ -45,7 +46,7 @@ class MinComputer implements ComputerInterface
     /**
      * {@inheritdoc}
      */
-    public function get(State $state)
+    public function get(State $state, CollectionInterface $collection)
     {
         return $state->min;
     }

@@ -11,12 +11,15 @@
 
 namespace Stats;
 
+use Stats\Collection\CollectionInterface;
 use Stats\Computer\ComputerInterface;
 use Stats\Entry;
 
 class Aggregator
 {
     protected $computers = array();
+
+    protected $data = array();
 
     /**
      * @param string            $code
@@ -48,5 +51,10 @@ class Aggregator
     public function getComputers()
     {
         return $this->computers;
+    }
+
+    public function supports(CollectionInterface $collection)
+    {
+
     }
 }

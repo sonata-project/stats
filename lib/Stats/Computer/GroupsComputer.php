@@ -11,20 +11,34 @@
 
 namespace Stats\Computer;
 
+use Stats\Collection\CollectionInterface;
+use Stats\Event\DataEvent;
+use Stats\Event\ComputeEvent;
+use Stats\Results;
 use Stats\State;
 use Stats\Entry;
+use Symfony\Component\EventDispatcher\Event;
+use Symfony\Component\EventDispatcher\EventDispatcher;
 
 class GroupsComputer implements ComputerInterface
 {
     protected $computers;
 
     /**
-     * @param array $computers
+     * @var EventDispatcher
      */
-    public function __construct(array $computers = array())
+    protected $dispatcher;
+
+    /**
+     * @param array           $computers
+     * @param EventDispatcher $dispatcher
+     */
+    public function __construct(array $computers = array(), EventDispatcher $dispatcher = null)
     {
-        foreach ($computers as $name => $computer) {
-            $this->addComputer($name, $computer);
+        $this->dispatcher = $dispatcher ?: new EventDispatcher();
+
+        foreach ($computers as $computer) {
+            $this->addComputer($computer);
         }
     }
 
@@ -39,9 +53,24 @@ class GroupsComputer implements ComputerInterface
     /**
      * {@inheritdoc}
      */
-    public function init(State $state)
+    public function supports(CollectionInterface $collection)
+    {
+        foreach ($this->computers as $computer) {
+            if (!$computer->supports($collection)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function init(State $state, CollectionInterface $collection)
     {
         $state->groups = array();
+        $state->collection =& $collection;
     }
 
     /**
@@ -53,15 +82,35 @@ class GroupsComputer implements ComputerInterface
 
         foreach ($this->computers as $code => $computer) {
             $computer->handle($entry, $state->groups[$entry->name][$code]);
+
+            if ($this->dispatcher) {
+                $this->dispatcher->dispatch('stats.handle', new DataEvent($this));
+            }
+
         }
     }
 
     /**
      * {@inheritdoc}
      */
-    public function get(State $state)
+    public function get(State $state, CollectionInterface $collection)
     {
-        return $state->groups;
+        $results = new Results();
+
+        foreach ($state->groups as $name => $childStates) {
+            $r = array();
+            foreach ($childStates as $code => $childState) {
+                $r[$code] = $this->computers[$code]->get($childState, $collection);
+            }
+
+            $results->addGroup($name, $r);
+        }
+
+        if ($this->dispatcher) {
+            $this->dispatcher->dispatch('stats.compute.post', new ComputeEvent($state, $collection, $results));
+        }
+
+        return $results;
     }
 
     /**
@@ -81,14 +130,21 @@ class GroupsComputer implements ComputerInterface
         foreach ($this->computers as $code => $computer) {
             $childState = new State;
 
-            $computer->init($childState);
+            $computer->init($childState, $state->collection);
 
             $state->groups[$name][$code] = $childState;
         }
     }
 
-    public function addComputer($code, ComputerInterface $listener)
+    /**
+     * @param ComputerInterface $computer
+     */
+    public function addComputer(ComputerInterface $computer)
     {
-        $this->computers[$code] = $listener;
+        $this->computers[$computer->getName()] = $computer;
+
+        if ($this->dispatcher) {
+            $this->dispatcher->addSubscriber($computer);
+        }
     }
 }

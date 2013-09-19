@@ -14,38 +14,43 @@ namespace Stats\Computer;
 use Stats\Collection\CollectionInterface;
 use Stats\State;
 use Stats\Entry;
+use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
-class SumComputer extends BaseComputer
+abstract class BaseComputer implements ComputerInterface, EventSubscriberInterface
 {
     /**
      * {@inheritdoc}
      */
-    public function getName()
+    public function supports(CollectionInterface $collection)
     {
-        return 'sum';
+        return true;
     }
 
     /**
      * {@inheritdoc}
      */
     public function init(State $state, CollectionInterface $collection)
-    {
-        $state->total = 0;
-    }
+    {}
 
     /**
      * {@inheritdoc}
      */
     public function handle(Entry $entry, State $state)
-    {
-        $state->total += $entry->value;
-    }
+    {}
 
     /**
      * {@inheritdoc}
      */
     public function get(State $state, CollectionInterface $collection)
     {
-        return $state->total;
+        return null;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public static function getSubscribedEvents()
+    {
+        return array();
     }
 }

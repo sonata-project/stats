@@ -11,6 +11,7 @@
 
 namespace Stats\Computer;
 
+use Stats\Collection\CollectionInterface;
 use Stats\State;
 use Stats\Entry;
 
@@ -22,13 +23,20 @@ interface ComputerInterface
     public function getName();
 
     /**
+     * @param CollectionInterface $collection
+     * @return mixed
+     */
+    public function supports(CollectionInterface $collection);
+
+    /**
      * Initialize a State to be used by the handle
      *
-     * @param State $state
+     * @param State               $state
+     * @param CollectionInterface $collection
      *
      * @return mixed
      */
-    public function init(State $state);
+    public function init(State $state, CollectionInterface $collection);
 
     /**
      * @param Entry $entry
@@ -37,9 +45,12 @@ interface ComputerInterface
     public function handle(Entry $entry, State $state);
 
     /**
-     * @param State $state
+     * Compute the result
      *
-     * @return float
+     * @param State               $state
+     * @param CollectionInterface $collection
+     *
+     * @return mixed
      */
-    public function get(State $state);
+    public function get(State $state, CollectionInterface $collection);
 }

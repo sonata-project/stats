@@ -11,10 +11,13 @@
 
 namespace Stats\Computer;
 
+use Stats\Collection\CollectionInterface;
+use Stats\Event\ComputeEvent;
+use Stats\Exception\MissingAggregateValueException;
 use Stats\State;
 use Stats\Entry;
 
-class PercentageComputer implements ComputerInterface
+class PercentageComputer extends BaseComputer
 {
     /**
      * {@inheritdoc}
@@ -27,9 +30,8 @@ class PercentageComputer implements ComputerInterface
     /**
      * {@inheritdoc}
      */
-    public function init(State $state)
+    public function init(State $state, CollectionInterface $collection)
     {
-        $state->groups = array();
         $state->total = 0;
     }
 
@@ -38,25 +40,49 @@ class PercentageComputer implements ComputerInterface
      */
     public function handle(Entry $entry, State $state)
     {
-        if (!isset($state->groups[$entry->name])) {
-            $state->groups[$entry->name] = 0;
-        }
-
-        $state->groups[$entry->name] += $entry->value;
         $state->total += $entry->value;
     }
 
     /**
      * {@inheritdoc}
      */
-    public function get(State $state)
+    public function get(State $state, CollectionInterface $collection)
     {
-        $results = array();
+        return 0;
+    }
 
-        foreach($state->groups as $name => $total) {
-            $results[$name] = $total / $state->total;
+    /**
+     * @param ComputeEvent $event
+     */
+    public function compute(ComputeEvent $event)
+    {
+        $results = $event->getResults();
+
+        $total = 0;
+        foreach ($results->getGroups() as $group => $aggregatedData) {
+            if (!isset($aggregatedData['sum'])) {
+                throw new MissingAggregateValueException('The sum aggregate is missing');
+            }
+
+            $total += $aggregatedData['sum'];
         }
 
-        return $results;
+        foreach ($results->getGroups() as $group => $aggregatedData) {
+            $aggregatedData['percent'] = $aggregatedData['sum'] / $total;
+
+            $results->addGroup($group, $aggregatedData);
+        }
+
+        $event->setResults($results);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public static function getSubscribedEvents()
+    {
+        return array(
+            'stats.compute.post' => array('compute', 1)
+        );
     }
 }

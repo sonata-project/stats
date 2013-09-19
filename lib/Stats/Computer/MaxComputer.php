@@ -15,14 +15,14 @@ use Stats\Collection\CollectionInterface;
 use Stats\State;
 use Stats\Entry;
 
-class SumComputer extends BaseComputer
+class MaxComputer extends BaseComputer
 {
     /**
      * {@inheritdoc}
      */
     public function getName()
     {
-        return 'sum';
+        return 'max';
     }
 
     /**
@@ -30,7 +30,7 @@ class SumComputer extends BaseComputer
      */
     public function init(State $state, CollectionInterface $collection)
     {
-        $state->total = 0;
+        $state->max = 0;
     }
 
     /**
@@ -38,7 +38,9 @@ class SumComputer extends BaseComputer
      */
     public function handle(Entry $entry, State $state)
     {
-        $state->total += $entry->value;
+        if ($state->max < $entry->value) {
+            $state->max = $entry->value;
+        }
     }
 
     /**
@@ -46,6 +48,6 @@ class SumComputer extends BaseComputer
      */
     public function get(State $state, CollectionInterface $collection)
     {
-        return $state->total;
+        return $state->max;
     }
 }
