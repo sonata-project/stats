@@ -57,7 +57,7 @@ class StandardDeviationComputer extends BaseComputer
 
         $result = sqrt($total / count($data));
 
-        $results->addMeta($this->getName(), $result === NAN ? 0 : $result);
+        $results->addMeta($this->getName(), is_nan($result) ? 0 : $result);
     }
 
     /**
